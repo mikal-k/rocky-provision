@@ -78,3 +78,89 @@
     - zabbix-postgres.service
     - zabbix-server.service
     - zabbix-web.service
+
+- name: Wait for Zabbix server port
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 10051
+    timeout: 120
+
+- name: Wait for Zabbix web frontend
+  ansible.builtin.uri:
+    url: http://127.0.0.1:8080/
+    status_code:
+      - 200
+      - 302
+    return_content: false
+
+- name: Login to Zabbix API
+  ansible.builtin.uri:
+    url: http://127.0.0.1:8080/api_jsonrpc.php
+    method: POST
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: user.login
+      params:
+        username: Admin
+        password: zabbix
+      id: 1
+    return_content: true
+  register: zabbix_api_login
+  no_log: true
+
+- name: Get default Zabbix server host
+  ansible.builtin.uri:
+    url: http://127.0.0.1:8080/api_jsonrpc.php
+    method: POST
+    headers:
+      Authorization: "Bearer {{ zabbix_api_login.json.result }}"
+      Content-Type: "application/json-rpc"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: host.get
+      params:
+        filter:
+          host:
+            - "Zabbix server"
+        selectInterfaces:
+          - interfaceid
+          - ip
+          - dns
+          - useip
+          - port
+      id: 2
+    return_content: true
+  register: zabbix_default_host
+
+- name: Update default Zabbix server agent interface
+  ansible.builtin.uri:
+    url: http://127.0.0.1:8080/api_jsonrpc.php
+    method: POST
+    headers:
+      Authorization: "Bearer {{ zabbix_api_login.json.result }}"
+      Content-Type: "application/json-rpc"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: hostinterface.update
+      params:
+        interfaceid: "{{ zabbix_default_host.json.result[0].interfaces[0].interfaceid }}"
+        useip: 0
+        ip: "127.0.0.1"
+        dns: "host.containers.internal"
+        port: "10050"
+      id: 3
+    return_content: true
+  when:
+    - zabbix_default_host.json.result is defined
+    - zabbix_default_host.json.result | length > 0
+    - zabbix_default_host.json.result[0].interfaces | length > 0
+
+- name: Verify Zabbix server can reach host agent2
+  ansible.builtin.command:
+    cmd: podman exec zabbix-server zabbix_get -s host.containers.internal -k agent.ping
+  register: zabbix_agent_ping
+  changed_when: false
+  failed_when: zabbix_agent_ping.stdout.strip() != "1"

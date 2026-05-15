@@ -1,0 +1,26 @@
+- name: Install Zabbix 7.4 release repo
+  ansible.builtin.dnf:
+    name: https://repo.zabbix.com/zabbix/7.4/release/rocky/10/noarch/zabbix-release-latest-7.4.el10.noarch.rpm
+    state: present
+    disable_gpg_check: true
+
+- name: Install Zabbix agent2
+  ansible.builtin.dnf:
+    name:
+      - zabbix-agent2
+    state: present
+
+- name: Configure Zabbix agent2
+  ansible.builtin.template:
+    src: zabbix_agent2.conf.j2
+    dest: /etc/zabbix/zabbix_agent2.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart zabbix-agent2
+
+- name: Enable and start Zabbix agent2
+  ansible.builtin.systemd_service:
+    name: zabbix-agent2
+    enabled: true
+    state: started

@@ -4,6 +4,7 @@
   roles:
     - common
     - podman-rootless
+    - zabbix-agent2
 
 - name: User setup
   hosts: rocky

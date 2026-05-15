@@ -1,0 +1,9 @@
+PidFile=/run/zabbix/zabbix_agent2.pid
+LogType=system
+
+Server=127.0.0.1,10.0.0.0/8,169.254.0.0/16
+ServerActive=127.0.0.1:10051
+Hostname=Zabbix server
+
+Include=/etc/zabbix/zabbix_agent2.d/*.conf
+ControlSocket=/tmp/agent.sock

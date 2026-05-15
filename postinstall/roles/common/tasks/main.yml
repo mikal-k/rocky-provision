@@ -26,3 +26,16 @@
       - jq
       - rsync
     state: present
+
+- name: Check SELinux mode
+  ansible.builtin.command:
+    cmd: getenforce
+  register: selinux_mode
+  changed_when: false
+
+- name: Assert SELinux is enforcing
+  ansible.builtin.assert:
+    that:
+      - selinux_mode.stdout == "Enforcing"
+    fail_msg: "SELinux is not enforcing: {{ selinux_mode.stdout }}"
+    success_msg: "SELinux is enforcing"
