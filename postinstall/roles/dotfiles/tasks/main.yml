@@ -1,0 +1,18 @@
+- name: Copy vimrc
+  ansible.builtin.copy:
+    src: vimrc
+    dest: ~/.vimrc
+    mode: "0644"
+
+- name: Copy bash aliases
+  ansible.builtin.copy:
+    src: bash_aliases
+    dest: ~/.bash_aliases
+    mode: "0644"
+
+- name: Ensure bash_aliases is loaded from bashrc
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    line: '[ -f ~/.bash_aliases ] && . ~/.bash_aliases'
+    create: true
+    mode: "0644"

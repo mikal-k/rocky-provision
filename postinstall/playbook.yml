@@ -1,0 +1,13 @@
+- name: System setup
+  hosts: rocky
+  become: true
+  roles:
+    - common
+    - podman-rootless
+
+- name: User setup
+  hosts: rocky
+  become: false
+  roles:
+    - dotfiles
+    - zabbix

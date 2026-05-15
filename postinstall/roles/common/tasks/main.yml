@@ -1,0 +1,28 @@
+- name: Install repo/plugin basics
+  ansible.builtin.dnf:
+    name:
+      - dnf-plugins-core
+      - epel-release
+    state: present
+
+- name: Enable CRB repo
+  ansible.builtin.command:
+    cmd: dnf config-manager --set-enabled crb
+  changed_when: false
+
+- name: Install useful base packages
+  ansible.builtin.dnf:
+    name:
+      - git
+      - vim-enhanced
+      - wget
+      - curl
+      - bash-completion
+      - tmux
+      - htop
+      - ncdu
+      - openssl
+      - tree
+      - jq
+      - rsync
+    state: present

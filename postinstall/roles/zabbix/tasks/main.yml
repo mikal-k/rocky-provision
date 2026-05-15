@@ -1,0 +1,80 @@
+- name: Ensure normal Zabbix dirs exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ zabbix_data_dir }}"
+    - "{{ zabbix_quadlet_dir }}"
+
+- name: Check container-owned Zabbix data dirs
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: zabbix_container_dirs
+  loop:
+    - "{{ zabbix_data_dir }}/postgres"
+    - "{{ zabbix_data_dir }}/server"
+
+- name: Create container-owned Zabbix data dirs if missing
+  ansible.builtin.command:
+    cmd: mkdir -p "{{ item.item }}"
+  loop: "{{ zabbix_container_dirs.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: not item.stat.exists
+  changed_when: true
+
+- name: Check if Zabbix DB secret exists
+  ansible.builtin.command:
+    cmd: podman secret exists zabbix_db_password
+  register: zabbix_secret_exists
+  changed_when: false
+  failed_when: false
+
+- name: Check if PostgreSQL data already exists
+  ansible.builtin.command:
+    cmd: podman unshare test -f "{{ zabbix_data_dir }}/postgres/PG_VERSION"
+  register: zabbix_pg_version
+  changed_when: false
+  failed_when: false
+
+- name: Refuse to generate new DB secret for existing PostgreSQL data
+  ansible.builtin.fail:
+    msg: "PostgreSQL data exists, but podman secret zabbix_db_password is missing. Do not generate a new password for an existing DB."
+  when:
+    - zabbix_secret_exists.rc != 0
+    - zabbix_pg_version.rc == 0
+
+- name: Create random Zabbix DB secret
+  ansible.builtin.shell:
+    cmd: "openssl rand -base64 32 | podman secret create zabbix_db_password -"
+  when: zabbix_secret_exists.rc != 0
+  no_log: true
+
+- name: Install Zabbix quadlet files
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "{{ zabbix_quadlet_dir }}/{{ item | regex_replace('\\.j2$', '') }}"
+    mode: "0644"
+  loop:
+    - zabbix.network.j2
+    - zabbix-postgres.container.j2
+    - zabbix-server.container.j2
+    - zabbix-web.container.j2
+  notify: Reload user systemd
+
+- name: Apply pending handlers before starting services
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start Zabbix services
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    scope: user
+    enabled: true
+    state: started
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ ansible_user_uid }}"
+  loop:
+    - zabbix-postgres.service
+    - zabbix-server.service
+    - zabbix-web.service

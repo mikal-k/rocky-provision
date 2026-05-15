@@ -1,0 +1,27 @@
+[Unit]
+Description=Zabbix web frontend
+Requires=zabbix-postgres.service zabbix-server.service
+After=zabbix-postgres.service zabbix-server.service
+
+[Container]
+Image={{ zabbix_web_image }}
+ContainerName=zabbix-web
+Network=zabbix.network
+
+PublishPort={{ zabbix_web_port }}:8080
+
+Secret=zabbix_db_password
+Environment=DB_SERVER_HOST=zabbix-postgres
+Environment=ZBX_SERVER_HOST=zabbix-server
+Environment=POSTGRES_DB={{ zabbix_db_name }}
+Environment=POSTGRES_USER={{ zabbix_db_user }}
+Environment=POSTGRES_PASSWORD_FILE=/run/secrets/zabbix_db_password
+Environment=PHP_TZ={{ zabbix_timezone }}
+Environment=TZ={{ zabbix_timezone }}
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

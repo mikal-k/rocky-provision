@@ -1,0 +1,51 @@
+#version=RHEL10
+
+text
+cdrom
+reboot --eject
+
+lang en_US.UTF-8
+keyboard --vckeymap=no --xlayouts='no'
+timezone Europe/Oslo --utc
+
+network --bootproto=dhcp --device=link --activate --hostname=__VM_HOSTNAME__
+
+rootpw --lock
+user --name=__VM_USER__ --groups=wheel --iscrypted --password=__PASSWORD_HASH__ --gecos="Rocky User"
+
+firstboot --disable
+skipx
+
+selinux --enforcing
+firewall --enabled --service=ssh
+services --enabled=sshd,chronyd
+
+zerombr
+clearpart --all --initlabel
+autopart --type=lvm --fstype=xfs
+bootloader --location=mbr
+
+%packages
+@^minimal-environment
+openssh-server
+sudo
+curl
+chrony
+tar
+rsync
+bash-completion
+%end
+
+%post --interpreter=/bin/bash
+echo "__VM_USER__ ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/90-__VM_USER__
+chmod 440 /etc/sudoers.d/90-__VM_USER__
+
+mkdir -p /home/__VM_USER__/.ssh
+cat > /home/__VM_USER__/.ssh/authorized_keys <<'EOF'
+__SSH_PUBKEY__
+EOF
+
+chown -R __VM_USER__:__VM_USER__ /home/__VM_USER__/.ssh
+chmod 700 /home/__VM_USER__/.ssh
+chmod 600 /home/__VM_USER__/.ssh/authorized_keys
+%end

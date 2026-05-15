@@ -1,0 +1,26 @@
+[Unit]
+Description=Zabbix server
+Requires=zabbix-postgres.service
+After=zabbix-postgres.service
+
+[Container]
+Image={{ zabbix_server_image }}
+ContainerName=zabbix-server
+Network=zabbix.network
+
+PublishPort=10051:10051
+Volume={{ zabbix_data_dir }}/server:/var/lib/zabbix:Z,U
+
+Secret=zabbix_db_password
+Environment=DB_SERVER_HOST=zabbix-postgres
+Environment=POSTGRES_DB={{ zabbix_db_name }}
+Environment=POSTGRES_USER={{ zabbix_db_user }}
+Environment=POSTGRES_PASSWORD_FILE=/run/secrets/zabbix_db_password
+Environment=TZ={{ zabbix_timezone }}
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

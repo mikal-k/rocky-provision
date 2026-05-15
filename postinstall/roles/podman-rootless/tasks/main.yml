@@ -1,0 +1,12 @@
+- name: Install Podman
+  ansible.builtin.dnf:
+    name:
+      - podman
+      - slirp4netns
+      - fuse-overlayfs
+    state: present
+
+- name: Enable linger for rocky user
+  ansible.builtin.command:
+    cmd: loginctl enable-linger rocky
+  changed_when: false
