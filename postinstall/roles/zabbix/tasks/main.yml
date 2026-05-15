@@ -107,7 +107,19 @@
       id: 1
     return_content: true
   register: zabbix_api_login
+  until:
+    - zabbix_api_login.json is defined
+    - zabbix_api_login.json.result is defined
+  retries: 30
+  delay: 5
+  changed_when: false
   no_log: true
+
+- name: Assert Zabbix API login succeeded
+  ansible.builtin.assert:
+    that:
+      - zabbix_api_login.json.result is defined
+    fail_msg: "Zabbix API login failed. Web is up, but API login did not return a token."
 
 - name: Get default Zabbix server host
   ansible.builtin.uri:
