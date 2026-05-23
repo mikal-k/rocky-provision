@@ -1,0 +1,20 @@
+[Unit]
+Description=Frigate NVR
+
+[Container]
+Image={{ frigate_image }}
+ContainerName=frigate
+Network=host
+
+PodmanArgs=--shm-size=256m
+
+Volume={{ frigate_config_dir }}:/config:Z
+Volume={{ frigate_media_dir }}:/media/frigate:Z
+Volume={{ frigate_cache_dir }}:/tmp/cache:Z
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

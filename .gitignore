@@ -1,1 +1,4 @@
 repo-to-text_*.txt
+
+# Local Ansible secrets
+postinstall/host_vars/*.yml

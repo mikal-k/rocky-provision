@@ -1,0 +1,13 @@
+frigate_image: "ghcr.io/blakeblackshear/frigate:stable"
+
+frigate_data_dir: "{{ ansible_env.HOME }}/.local/share/frigate"
+frigate_config_dir: "{{ frigate_data_dir }}/config"
+frigate_media_dir: "{{ frigate_data_dir }}/media"
+frigate_cache_dir: "{{ frigate_data_dir }}/cache"
+
+frigate_quadlet_dir: "{{ ansible_env.HOME }}/.config/containers/systemd"
+
+frigate_web_port: 8971
+
+frigate_camera_name: dlink6500
+frigate_camera_rtsp_url: ""

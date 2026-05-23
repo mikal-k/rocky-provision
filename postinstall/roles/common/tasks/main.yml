@@ -15,12 +15,14 @@
     name:
       - bash-completion
       - curl
+      - dnsmasq
       - fwupd
       - git
       - htop
       - iw
       - jq
       - ncdu
+      - NetworkManager-wifi
       - nmap
       - nmap-ncat
       - openssl
@@ -29,6 +31,7 @@
       - tree
       - vim-enhanced
       - wget
+      - wpa_supplicant
     state: present
 
 - name: Check SELinux mode

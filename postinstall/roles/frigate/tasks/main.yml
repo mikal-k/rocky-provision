@@ -1,0 +1,64 @@
+- name: Assert Frigate camera RTSP URL is configured
+  ansible.builtin.assert:
+    that:
+      - frigate_camera_rtsp_url | length > 0
+    fail_msg: "Set frigate_camera_rtsp_url in local host_vars or Ansible Vault."
+
+- name: Check Frigate web port in firewalld
+  become: true
+  ansible.builtin.command:
+    cmd: firewall-cmd --permanent --query-port={{ frigate_web_port }}/tcp
+  register: frigate_firewall_web_query
+  changed_when: false
+  failed_when: false
+
+- name: Open Frigate web port in firewalld
+  become: true
+  ansible.builtin.command:
+    cmd: firewall-cmd --permanent --add-port={{ frigate_web_port }}/tcp
+  register: frigate_firewall_web_add
+  changed_when: true
+  when: frigate_firewall_web_query.rc != 0
+
+- name: Reload firewalld after Frigate firewall changes
+  become: true
+  ansible.builtin.command:
+    cmd: firewall-cmd --reload
+  changed_when: true
+  when: frigate_firewall_web_add.changed | default(false)
+
+- name: Ensure Frigate dirs exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ frigate_config_dir }}"
+    - "{{ frigate_media_dir }}"
+    - "{{ frigate_cache_dir }}"
+    - "{{ frigate_quadlet_dir }}"
+
+- name: Install Frigate config
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: "{{ frigate_config_dir }}/config.yml"
+    mode: "0644"
+
+- name: Install Frigate quadlet
+  ansible.builtin.template:
+    src: frigate.container.j2
+    dest: "{{ frigate_quadlet_dir }}/frigate.container"
+    mode: "0644"
+  notify: Reload user systemd
+
+- name: Apply pending handlers before starting Frigate
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start Frigate
+  ansible.builtin.systemd_service:
+    name: frigate.service
+    scope: user
+    enabled: true
+    state: started
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ ansible_user_uid }}"

@@ -1,0 +1,16 @@
+mqtt:
+  enabled: false
+
+cameras:
+  {{ frigate_camera_name }}:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: {{ frigate_camera_rtsp_url }}
+          roles:
+            - detect
+
+    detect:
+      fps: 3
+      width: 1920
+      height: 1080
