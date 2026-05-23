@@ -1,3 +1,43 @@
+- name: Check Zabbix web port in firewalld
+  become: true
+  ansible.builtin.command:
+    cmd: firewall-cmd --permanent --query-port={{ zabbix_web_port }}/tcp
+  register: zabbix_firewall_web_query
+  changed_when: false
+  failed_when: false
+
+- name: Open Zabbix web port in firewalld
+  become: true
+  ansible.builtin.command:
+    cmd: firewall-cmd --permanent --add-port={{ zabbix_web_port }}/tcp
+  register: zabbix_firewall_web_add
+  changed_when: true
+  when: zabbix_firewall_web_query.rc != 0
+
+- name: Check Zabbix server/trapper port in firewalld
+  become: true
+  ansible.builtin.command:
+    cmd: firewall-cmd --permanent --query-port=10051/tcp
+  register: zabbix_firewall_server_query
+  changed_when: false
+  failed_when: false
+
+- name: Open Zabbix server/trapper port in firewalld
+  become: true
+  ansible.builtin.command:
+    cmd: firewall-cmd --permanent --add-port=10051/tcp
+  register: zabbix_firewall_server_add
+  changed_when: true
+  when: zabbix_firewall_server_query.rc != 0
+
+- name: Reload firewalld after Zabbix firewall changes
+  become: true
+  ansible.builtin.command:
+    cmd: firewall-cmd --reload
+  changed_when: true
+  when:
+    - zabbix_firewall_web_add.changed | default(false) or zabbix_firewall_server_add.changed | default(false)
+
 - name: Ensure normal Zabbix dirs exist
   ansible.builtin.file:
     path: "{{ item }}"
