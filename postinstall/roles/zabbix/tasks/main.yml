@@ -185,6 +185,16 @@
       id: 2
     return_content: true
   register: zabbix_default_host
+  changed_when: false
+  failed_when: zabbix_default_host.json.error is defined
+
+- name: Assert default Zabbix server host has an agent interface
+  ansible.builtin.assert:
+    that:
+      - zabbix_default_host.json.result is defined
+      - zabbix_default_host.json.result | length > 0
+      - zabbix_default_host.json.result[0].interfaces | length > 0
+    fail_msg: "Default Zabbix server host or agent interface was not found."
 
 - name: Update default Zabbix server agent interface
   ansible.builtin.uri:
@@ -205,10 +215,9 @@
         port: "10050"
       id: 3
     return_content: true
-  when:
-    - zabbix_default_host.json.result is defined
-    - zabbix_default_host.json.result | length > 0
-    - zabbix_default_host.json.result[0].interfaces | length > 0
+  register: zabbix_interface_update
+  changed_when: false
+  failed_when: zabbix_interface_update.json.error is defined
 
 - name: Verify Zabbix server can reach host agent2
   ansible.builtin.command:
