@@ -1,0 +1,8 @@
+# Copy to host_vars/rocky-t440s.yml and fill real values.
+# The real .yml file is ignored and must not be committed.
+
+camera_ap_wifi_psk: ""
+camera_ap_camera_mac: ""
+camera_ap_camera_ip: "10.0.1.216"
+
+frigate_camera_rtsp_url: "rtsp://admin:PIN@10.0.1.216:554/live/profile.0/video"

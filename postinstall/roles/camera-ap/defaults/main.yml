@@ -1,0 +1,14 @@
+camera_ap_connection_name: camera-ap
+camera_ap_if: wlp3s0
+camera_ap_uplink_if: enp0s25
+
+camera_ap_ssid: DLinkCam
+camera_ap_wifi_psk: ""
+
+camera_ap_ip_cidr: "10.0.1.1/24"
+camera_ap_subnet: "10.0.1.0/24"
+
+camera_ap_camera_mac: ""
+camera_ap_camera_ip: ""
+camera_ap_camera_hostname: "DCS-6500LH"
+camera_ap_camera_alias: "dlinkcam"

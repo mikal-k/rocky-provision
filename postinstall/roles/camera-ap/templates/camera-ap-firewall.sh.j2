@@ -1,0 +1,19 @@
+#!/bin/sh
+
+if /usr/sbin/nft list table inet camblock >/dev/null 2>&1; then
+    /usr/sbin/nft delete table inet camblock
+fi
+
+if ! /usr/sbin/nft add table inet camblock; then
+    exit 1
+fi
+
+if ! /usr/sbin/nft add chain inet camblock forward '{ type filter hook forward priority -50; policy accept; }'; then
+    exit 1
+fi
+
+if ! /usr/sbin/nft add rule inet camblock forward ip saddr {{ camera_ap_subnet }} oifname "{{ camera_ap_uplink_if }}" counter drop; then
+    exit 1
+fi
+
+exit 0

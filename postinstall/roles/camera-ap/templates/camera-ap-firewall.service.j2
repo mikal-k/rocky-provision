@@ -1,0 +1,12 @@
+[Unit]
+Description=Camera AP firewall rules
+After=NetworkManager.service firewalld.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/camera-ap-firewall.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

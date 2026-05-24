@@ -1,0 +1,90 @@
+- name: Assert camera AP local values are configured
+  ansible.builtin.assert:
+    that:
+      - camera_ap_wifi_psk | length >= 8
+      - camera_ap_camera_mac | length > 0
+      - camera_ap_camera_ip | length > 0
+    fail_msg: "Set camera_ap_wifi_psk, camera_ap_camera_mac and camera_ap_camera_ip in ignored host_vars."
+
+- name: Install camera AP packages
+  ansible.builtin.dnf:
+    name:
+      - NetworkManager-wifi
+      - wpa_supplicant
+      - dnsmasq
+      - nftables
+    state: present
+
+- name: Ensure NetworkManager dnsmasq shared config dir exists
+  ansible.builtin.file:
+    path: /etc/NetworkManager/dnsmasq-shared.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install camera AP NetworkManager connection
+  ansible.builtin.template:
+    src: camera-ap.nmconnection.j2
+    dest: "/etc/NetworkManager/system-connections/{{ camera_ap_connection_name }}.nmconnection"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  notify:
+    - Reload NetworkManager connections
+    - Restart camera AP
+
+- name: Install camera DHCP reservation
+  ansible.builtin.template:
+    src: camera-ap-dnsmasq.conf.j2
+    dest: /etc/NetworkManager/dnsmasq-shared.d/camera-ap.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart camera AP
+
+- name: Add camera hostname to /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "^{{ camera_ap_camera_ip | regex_escape }}\\s+"
+    line: "{{ camera_ap_camera_ip }} {{ camera_ap_camera_hostname }} {{ camera_ap_camera_alias }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install camera AP firewall script
+  ansible.builtin.template:
+    src: camera-ap-firewall.sh.j2
+    dest: /usr/local/sbin/camera-ap-firewall.sh
+    owner: root
+    group: root
+    mode: "0755"
+  notify:
+    - Restart camera AP firewall
+
+- name: Install camera AP firewall service
+  ansible.builtin.template:
+    src: camera-ap-firewall.service.j2
+    dest: /etc/systemd/system/camera-ap-firewall.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart camera AP firewall
+
+- name: Apply pending camera AP handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure camera AP connection is up
+  ansible.builtin.command:
+    cmd: nmcli con up {{ camera_ap_connection_name }}
+  changed_when: false
+
+- name: Enable and start camera AP firewall
+  ansible.builtin.systemd:
+    name: camera-ap-firewall.service
+    enabled: true
+    state: started

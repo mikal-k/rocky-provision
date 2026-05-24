@@ -1,0 +1,22 @@
+[connection]
+id={{ camera_ap_connection_name }}
+type=wifi
+interface-name={{ camera_ap_if }}
+autoconnect=true
+
+[wifi]
+mode=ap
+ssid={{ camera_ap_ssid }}
+band=bg
+channel=6
+
+[wifi-security]
+key-mgmt=wpa-psk
+psk={{ camera_ap_wifi_psk }}
+
+[ipv4]
+method=shared
+address1={{ camera_ap_ip_cidr }}
+
+[ipv6]
+method=disabled
