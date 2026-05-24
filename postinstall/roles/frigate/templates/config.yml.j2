@@ -1,12 +1,18 @@
 mqtt:
   enabled: false
 
+go2rtc:
+  streams:
+    {{ frigate_camera_name }}:
+      - {{ frigate_camera_rtsp_url }}
+
 cameras:
   {{ frigate_camera_name }}:
     enabled: true
     ffmpeg:
       inputs:
-        - path: {{ frigate_camera_rtsp_url }}
+        - path: rtsp://127.0.0.1:8554/{{ frigate_camera_name }}
+          input_args: preset-rtsp-restream
           roles:
             - detect
 
@@ -14,3 +20,5 @@ cameras:
       fps: 3
       width: 1920
       height: 1080
+
+version: 0.17-0
