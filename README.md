@@ -3,5 +3,8 @@
 feat.
 - Rootless Podman
 - Zabbix 7.4
+- Frigate
+- Deny DLink cam internet
+- Tailscale
 
 
