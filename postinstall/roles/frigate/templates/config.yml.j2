@@ -6,6 +6,19 @@ go2rtc:
     {{ frigate_camera_name }}:
       - {{ frigate_camera_rtsp_url }}
 
+record:
+  enabled: true
+  continuous:
+    days: {{ frigate_record_continuous_days | default(0) }}
+  motion:
+    days: {{ frigate_record_motion_days | default(0) }}
+  alerts:
+    retain:
+      days: {{ frigate_record_alerts_days | default(3) }}
+  detections:
+    retain:
+      days: {{ frigate_record_detections_days | default(1) }}
+
 cameras:
   {{ frigate_camera_name }}:
     enabled: true
@@ -15,10 +28,26 @@ cameras:
           input_args: preset-rtsp-restream
           roles:
             - detect
+            - record
 
     detect:
-      fps: 3
-      width: 1920
-      height: 1080
+      enabled: true
+      fps: {{ frigate_detect_fps | default(3) }}
+      width: {{ frigate_detect_width | default(1920) }}
+      height: {{ frigate_detect_height | default(1080) }}
+
+    notifications:
+      enabled: true
+
+{% if frigate_motion_mask is defined and frigate_motion_mask %}
+    motion:
+      mask: {{ frigate_motion_mask }}
+{% endif %}
 
 version: 0.17-0
+
+{% if frigate_notifications_email is defined and frigate_notifications_email %}
+notifications:
+  enabled: true
+  email: {{ frigate_notifications_email }}
+{% endif %}

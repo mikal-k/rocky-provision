@@ -1,0 +1,85 @@
+- name: Install Tailscale repo
+  ansible.builtin.get_url:
+    url: "{{ tailscale_repo_url }}"
+    dest: /etc/yum.repos.d/tailscale.repo
+    mode: "0644"
+  become: true
+
+- name: Install Tailscale
+  ansible.builtin.dnf:
+    name: tailscale
+    state: present
+  become: true
+
+- name: Enable and start tailscaled
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started
+  become: true
+
+- name: Check if Tailscale is logged in
+  ansible.builtin.command: tailscale status
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+
+- name: Show Tailscale login hint
+  ansible.builtin.debug:
+    msg: "Tailscale is installed but not logged in. Run: sudo tailscale up"
+  when: tailscale_status.rc != 0 or 'NeedsLogin' in tailscale_status.stdout
+
+- name: Check firewalld zones
+  ansible.builtin.command: firewall-cmd --permanent --get-zones
+  register: firewalld_zones
+  changed_when: false
+  failed_when: false
+  become: true
+
+- name: Create Tailscale firewalld zone
+  ansible.builtin.command: "firewall-cmd --permanent --new-zone={{ tailscale_firewalld_zone }}"
+  when: tailscale_firewalld_zone not in firewalld_zones.stdout.split()
+  notify: Reload firewalld
+  become: true
+
+- name: Check if tailscale0 is in firewalld zone
+  ansible.builtin.command: "firewall-cmd --permanent --zone={{ tailscale_firewalld_zone }} --query-interface={{ tailscale_firewalld_interface }}"
+  register: tailscale_query_interface
+  changed_when: false
+  failed_when: tailscale_query_interface.rc not in [0, 1]
+  become: true
+
+- name: Add tailscale0 to firewalld zone
+  ansible.builtin.command: "firewall-cmd --permanent --zone={{ tailscale_firewalld_zone }} --add-interface={{ tailscale_firewalld_interface }}"
+  when: tailscale_query_interface.rc == 1
+  notify: Reload firewalld
+  become: true
+
+- name: Check Tailscale firewalld ports
+  ansible.builtin.command: "firewall-cmd --permanent --zone={{ tailscale_firewalld_zone }} --query-port={{ item }}"
+  loop: "{{ tailscale_firewalld_ports }}"
+  register: tailscale_query_ports
+  changed_when: false
+  failed_when: tailscale_query_ports.rc not in [0, 1]
+  become: true
+
+- name: Open ports on Tailscale firewalld zone
+  ansible.builtin.command: "firewall-cmd --permanent --zone={{ tailscale_firewalld_zone }} --add-port={{ item.item }}"
+  loop: "{{ tailscale_query_ports.results }}"
+  when: item.rc == 1
+  notify: Reload firewalld
+  become: true
+
+- name: Check Tailscale Serve status
+  ansible.builtin.command: tailscale serve status
+  register: tailscale_serve_status
+  changed_when: false
+  failed_when: false
+  become: true
+
+- name: Enable Tailscale Serve for Frigate
+  ansible.builtin.command: "tailscale serve --bg {{ tailscale_serve_target }}"
+  when:
+    - tailscale_enable_serve | bool
+    - tailscale_serve_target not in tailscale_serve_status.stdout
+  become: true

@@ -5,6 +5,8 @@
     - common
     - camera-ap
     - podman-rootless
+    - role: tailscale
+      tags: tailscale
     - zabbix-agent2
 
 - name: User setup
