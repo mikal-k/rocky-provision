@@ -7,4 +7,4 @@ tailscale_firewalld_ports:
   - 8971/tcp
 
 tailscale_enable_serve: true
-tailscale_serve_target: "http://127.0.0.1:5000"
+tailscale_serve_target: "https+insecure://127.0.0.1:8971"
